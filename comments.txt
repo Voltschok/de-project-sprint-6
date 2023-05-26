@@ -1,0 +1,5 @@
+1. Переименовал колонку datetime в event_dt при создании таблицы group_log (Step2-create_table_group_log.sql)
+2. Также переименовал колонку в DAGе
+3. Создал Variables в airflow для AWS_ACCESS_KEY_ID и AWS_SECRET_ACCESS_KEY
+4. Вынес ключи из функции и передал их как Variables
+5. Поправил bash_command_tmpl

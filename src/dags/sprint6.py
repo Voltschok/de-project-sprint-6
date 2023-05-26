@@ -1,4 +1,5 @@
 from airflow import DAG
+from airflow.models.variable import Variable
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.decorators import dag
@@ -21,10 +22,16 @@ conn_info = {'host': 'vertica.tgcloudenv.ru',
              'connection_timeout': 30
              # connection timeout is not enabled by default
             }
+
+key_id=Variable.get("AWS_ACCESS_KEY_ID")
+secret_key=Variable.get("AWS_SECRET_ACCESS_KEY")
+
 def load_data(conn, path:str ,  file:str):  
     df_csv = pd.read_csv( path )
     if file=='dialogs':
         df_csv = df_csv.rename(columns={'message_type': 'message_group'})
+    elif file=='group_log':
+    	df_csv = df_csv.rename(columns={'datetime': 'event_dt'})
     tuple_col=", ".join(list(df_csv.columns) )
     tuple_col_str= ('('+ str(tuple_col)+')')
    
@@ -40,14 +47,13 @@ def load_data(conn, path:str ,  file:str):
  
 def fetch_s3_file(bucket: str, key: str):
     # сюда поместить код из скрипта для скачивания файла
-    AWS_ACCESS_KEY_ID = "YCAJEWXOyY8Bmyk2eJL-hlt2K"
-    AWS_SECRET_ACCESS_KEY = "YCPs52ajb2jNXxOUsL4-pFDL1HnV2BCPd928_ZoA"
+
     session = boto3.session.Session()
     s3_client = session.client(
     service_name='s3',
     endpoint_url='https://storage.yandexcloud.net',
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,)
+    aws_access_key_id=key_id,
+    aws_secret_access_key=secret_key)
     s3_client.download_file(
     bucket,
     key,
@@ -58,15 +64,12 @@ def fetch_s3_file(bucket: str, key: str):
 
 bucket_files = ['groups.csv', 'dialogs.csv', 'users.csv', 'group_log.csv']
 
-bash_command_tmpl = """ 
-head {{ params.files[0] }} 
+bash_command_tmpl = """
+{% for file in params.files %}
+head {{ file }}
+{% endfor %}
+"""
 
-head {{ params.files[1] }} 
-head {{ params.files[2] }} 
-head {{ params.files[3] }} 
-    
-
-""" 
 
 #{{ params.files }} for ((i=1; i<3; i++)) {{ params.files[i] }}
 
