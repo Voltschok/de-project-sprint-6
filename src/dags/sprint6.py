@@ -71,9 +71,6 @@ head {{ file }}
 """
 
 
-#{{ params.files }} for ((i=1; i<3; i++)) {{ params.files[i] }}
-
-
 
 with DAG('test2', schedule_interval=None, start_date=pendulum.parse('2022-07-13')
 ) as dag:
